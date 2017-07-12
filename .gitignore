@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+bgs/
+test/
+pip-log.txt
+*.tar.gz
+
+*.iml
+.idea/

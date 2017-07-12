@@ -99,8 +99,7 @@ def detect(im, param_vals):
     # To obtain pixel coordinates, the window coordinates are scaled according
     # to the stride size, and pixel coordinates.
     for i, (scaled_im, y_val) in enumerate(zip(scaled_ims, y_vals)):
-        for window_coords in numpy.argwhere(y_val[0, :, :, 0] >
-                                                       -math.log(1./0.99 - 1)):
+        for window_coords in numpy.argwhere(y_val[0, :, :, 0] > -math.log(1./0.99 - 1)):
             letter_probs = (y_val[0,
                                   window_coords[0],
                                   window_coords[1], 1:].reshape(
