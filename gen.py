@@ -57,6 +57,12 @@ CHARS = common.CHARS + " "
 
 
 def make_char_ims(font_path, output_height):
+    """
+    获得指定字体的所有字符图片
+    :param font_path: 字体文件目录
+    :param output_height: 字符图高度
+    :return: 字符，字符图片
+    """
     font_size = output_height * 4
 
     font = ImageFont.truetype(font_path, font_size)
@@ -75,6 +81,13 @@ def make_char_ims(font_path, output_height):
 
 
 def euler_to_mat(yaw, pitch, roll):
+    """
+    通过欧拉坐标变换值生成变换矩阵
+    :param yaw: 
+    :param pitch: 
+    :param roll: 
+    :return: 变换矩阵
+    """
     # Rotate clockwise about the Y-axis
     c, s = math.cos(yaw), math.sin(yaw)
     M = numpy.matrix([[  c, 0.,  s],
@@ -97,6 +110,10 @@ def euler_to_mat(yaw, pitch, roll):
 
 
 def pick_colors():
+    """
+    随机选择两种相差超过0.3的灰度值作为字符和车牌的颜色
+    :return: 字符颜色，车牌颜色
+    """
     first = True
     while first or plate_color - text_color < 0.3:
         text_color = random.random()
@@ -112,6 +129,17 @@ def make_affine_transform(from_shape, to_shape,
                           scale_variation=1.0,
                           rotation_variation=1.0,
                           translation_variation=1.0):
+    """
+    进行仿射(affine)变换
+    :param from_shape: 车牌的宽高
+    :param to_shape: 背景的宽高
+    :param min_scale: 合理范围的最小缩放指数
+    :param max_scale: 合理范围的最大缩放指数
+    :param scale_variation: 
+    :param rotation_variation: 
+    :param translation_variation: 
+    :return: 用于描述变换形式的矩阵，变换后的车牌是否在合理范围内
+    """
     out_of_bounds = False
 
     from_size = numpy.array([[from_shape[1], from_shape[0]]]).T
@@ -158,6 +186,10 @@ def make_affine_transform(from_shape, to_shape,
 
 
 def generate_code():
+    """
+    随机生成8位字符序列
+    :return: 生成的序列
+    """
     return "{}{}{}{} {}{}{}".format(
         random.choice(common.LETTERS),
         random.choice(common.LETTERS),
@@ -169,6 +201,12 @@ def generate_code():
 
 
 def rounded_rect(shape, radius):
+    """
+    生成圆角矩形的矩阵
+    :param shape: 圆角矩形的宽高
+    :param radius: 圆角矩形的圆角大小
+    :return: 圆角矩形矩阵
+    """
     out = numpy.ones(shape)
     out[:radius, :radius] = 0.0
     out[-radius:, :radius] = 0.0
@@ -184,6 +222,12 @@ def rounded_rect(shape, radius):
 
 
 def generate_plate(font_height, char_ims):
+    """
+    根据字符高度，生成车牌图片的图形矩阵
+    :param font_height: 字符高度
+    :param char_ims: 每个字符的图片列表
+    :return: 车牌内容矩阵，车牌形状矩阵，车牌字符序列
+    """
     h_padding = random.uniform(0.2, 0.4) * font_height
     v_padding = random.uniform(0.1, 0.3) * font_height
     spacing = font_height * random.uniform(-0.05, 0.05)
@@ -215,11 +259,16 @@ def generate_plate(font_height, char_ims):
 
 
 def generate_bg(num_bg_images):
+    """
+    随机挑选一个图片，在随机的位置上切一块指定大小的图片样本
+    :param num_bg_images: 总图片数目
+    :return: 指定大小的图片样本
+    """
     found = False
     while not found:
         fname = "bgs/{:08d}.jpg".format(random.randint(0, num_bg_images - 1))
         bg = cv2.imread(fname, cv2.IMREAD_GRAYSCALE) / 255.
-        if (bg.shape[1] >= OUTPUT_SHAPE[1] and bg.shape[0] >= OUTPUT_SHAPE[0]):
+        if bg.shape[1] >= OUTPUT_SHAPE[1] and bg.shape[0] >= OUTPUT_SHAPE[0]:
             found = True
 
     x = random.randint(0, bg.shape[1] - OUTPUT_SHAPE[1])
@@ -230,6 +279,12 @@ def generate_bg(num_bg_images):
 
 
 def generate_im(char_ims, num_bg_images):
+    """
+    产生固定大小的，有车牌内容的图片
+    :param char_ims: 每个字符的图片列表
+    :param num_bg_images: 背景图片总数
+    :return: 生成的车牌图片，车牌字符序列，生成图片是否包含合理车牌
+    """
     bg = generate_bg(num_bg_images)
 
     plate, plate_mask, code = generate_plate(FONT_HEIGHT, char_ims)
@@ -256,22 +311,22 @@ def generate_im(char_ims, num_bg_images):
 
 
 def load_fonts(folder_path):
+    """
+    获得所有字体的字符图片
+    :param folder_path: 字体目录
+    :return: 字体文件列表，每一种字体的字符图片列表
+    """
     font_char_ims = {}
     fonts = [f for f in os.listdir(folder_path) if f.endswith('.ttf')]
     for font in fonts:
-        font_char_ims[font] = dict(make_char_ims(os.path.join(folder_path,
-                                                              font),
-                                                 FONT_HEIGHT))
+        font_char_ims[font] = dict(make_char_ims(os.path.join(folder_path, font), FONT_HEIGHT))
     return fonts, font_char_ims
 
 
 def generate_ims():
     """
-    Generate number plate images.
-
-    :return:
-        Iterable of number plate images.
-
+    使用随机字体，产生有车牌的图片
+    :return: 车牌图片的迭代访问器
     """
     variation = 1.0
     fonts, font_char_ims = load_fonts(FONT_DIR)

@@ -26,17 +26,14 @@ Routines for training the network.
 
 """
 
-
 __all__ = (
     'train',
 )
-
 
 import functools
 import glob
 import itertools
 import multiprocessing
-import random
 import sys
 import time
 
@@ -50,6 +47,13 @@ import model
 
 
 def code_to_vec(p, code):
+    """
+    将字符序列转换为one-hot向量，并拼接为一维长向量
+    :param p: 是否含有车牌号（布尔值）
+    :param code: 车牌号（字符序列）
+    :return: 编码过的一维向量
+    """
+
     def char_to_vec(c):
         y = numpy.zeros((len(common.CHARS),))
         y[common.CHARS.index(c)] = 1.0
@@ -61,6 +65,11 @@ def code_to_vec(p, code):
 
 
 def read_data(img_glob):
+    """
+    从指定目录读取所有图片文件
+    :param img_glob: 带通配符的目录位置
+    :return: 图片内容，编码过的标签（识别结果）
+    """
     for fname in sorted(glob.glob(img_glob)):
         im = cv2.imread(fname)[:, :, 0].astype(numpy.float32) / 255.
         code = fname.split("/")[1][9:16]
@@ -69,6 +78,11 @@ def read_data(img_glob):
 
 
 def unzip(b):
+    """
+    二元数值ZIP合并
+    :param b: (("A", "B"), ("C", "D"), ("E", "F"))
+    :return: (("A", "C", "E"), ("B", "D", "F"))
+    """
     xs, ys = zip(*b)
     xs = numpy.array(xs)
     ys = numpy.array(ys)
@@ -76,6 +90,12 @@ def unzip(b):
 
 
 def batch(it, batch_size):
+    """
+    将大批的数据按照指定大小分成小批返回
+    :param it: 待分配拆分的数据源
+    :param batch_size: 分批的大小
+    :return: 每次返回一批数据
+    """
     out = []
     for x in it:
         out.append(x)
@@ -96,9 +116,8 @@ def mpgen(f):
 
     @functools.wraps(f)
     def wrapped(*args, **kwargs):
-        q = multiprocessing.Queue(3) 
-        proc = multiprocessing.Process(target=main,
-                                       args=(q, args, kwargs))
+        q = multiprocessing.Queue(3)
+        proc = multiprocessing.Process(target=main, args=(q, args, kwargs))
         proc.start()
         try:
             while True:
@@ -109,11 +128,12 @@ def mpgen(f):
             proc.join()
 
     return wrapped
-        
+
 
 @mpgen
 def read_batches(batch_size):
     g = gen.generate_ims()
+
     def gen_vecs():
         for im, c, p in itertools.islice(g, batch_size):
             yield im, code_to_vec(p, c)
@@ -194,10 +214,10 @@ def train(learn_rate, report_steps, batch_size, initial_weights=None):
                       loss],
                      feed_dict={x: test_xs, y_: test_ys})
         num_correct = numpy.sum(
-                        numpy.logical_or(
-                            numpy.all(r[0] == r[1], axis=1),
-                            numpy.logical_and(r[2] < 0.5,
-                                              r[3] < 0.5)))
+            numpy.logical_or(
+                numpy.all(r[0] == r[1], axis=1),
+                numpy.logical_and(r[2] < 0.5,
+                                  r[3] < 0.5)))
         r_short = (r[0][:190], r[1][:190], r[2][:190], r[3][:190])
         for b, c, pb, pc in zip(*r_short):
             print("{} {} <-> {} {}".format(vec_to_plate(c), pc,
@@ -212,7 +232,7 @@ def train(learn_rate, report_steps, batch_size, initial_weights=None):
             r[4],
             r[5],
             "".join("X "[numpy.array_equal(b, c) or (not pb and not pc)]
-                                           for b, c, pb, pc in zip(*r_short))))
+                    for b, c, pb, pc in zip(*r_short))))
 
     def do_batch():
         sess.run(train_step,
@@ -261,4 +281,3 @@ if __name__ == "__main__":
           report_steps=20,
           batch_size=50,
           initial_weights=initial_weights)
-

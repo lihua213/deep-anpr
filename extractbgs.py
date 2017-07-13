@@ -48,14 +48,9 @@ def im_from_file(f):
 
 def extract_backgrounds(archive_name):
     """
-    Extract backgrounds from provided tar archive.
-
-    JPEGs from the archive are converted into grayscale, and cropped/resized to
-    256x256, and saved in ./bgs/.
-
-    :param archive_name:
-        Name of the .tar file containing JPEGs of background images.
-
+    从指定的Tar压缩包中提取JPG格式图片，将图片转换为灰度图，裁剪为方形，并缩放到256x256大小
+    转换后的图片保存到./bgs目录
+    :param archive_name: 包含有JPG图片的压缩包位置
     """
     os.mkdir("bgs")
 

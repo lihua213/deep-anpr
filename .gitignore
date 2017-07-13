@@ -6,6 +6,7 @@ bgs/
 test/
 pip-log.txt
 *.tar.gz
+*.npz
 
 *.iml
 .idea/
